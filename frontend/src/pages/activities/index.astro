@@ -1,0 +1,111 @@
+---
+// Configuración de la URL base de la API
+const API_URL = "http://127.0.0.1:8000";
+
+// Fetch a la API en tiempo de build para la Generación Estática (SSG)
+const respuesta = await fetch(`${API_URL}/activities`);
+const actividades = await respuesta.json();
+---
+
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Listado de Actividades</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .contenedor {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .lista-actividades {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        }
+        .actividad-tarjeta {
+            background: white;
+            border: 1px solid #e1e8ed;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .actividad-tarjeta:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.1);
+        }
+        .actividad-tarjeta h2 {
+            margin-top: 0;
+            color: #2980b9;
+            font-size: 1.5rem;
+        }
+        .detalle-item {
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+        }
+        .enlace-detalle {
+            display: block;
+            text-align: center;
+            margin-top: 1.5rem;
+            padding: 0.75rem 1rem;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        .enlace-detalle:hover {
+            background-color: #2980b9;
+        }
+        .mensaje-vacio {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="contenedor">
+        <h1>Actividades Disponibles</h1>
+        
+        <div class="lista-actividades">
+            {actividades.length > 0 ? (
+                actividades.map((actividad: any) => (
+                    <div class="actividad-tarjeta">
+                        <h2>{actividad.titulo}</h2>
+                        <p class="detalle-item">
+                            <strong>Fecha:</strong> {new Date(actividad.fecha).toLocaleString('es-LA')}
+                        </p>
+                        <p class="detalle-item">
+                            <strong>Capacidad:</strong> {actividad.capacidad} personas
+                        </p>
+                        <p class="detalle-item">
+                            <strong>Disponibilidad:</strong> {actividad.disponibilidad} lugares
+                        </p>
+                        
+                        <a href={`/activities/${actividad.id}`} class="enlace-detalle">
+                            Ver Detalles de Actividad
+                        </a>
+                    </div>
+                ))
+            ) : (
+                <p class="mensaje-vacio">No hay actividades disponibles en este momento.</p>
+            )}
+        </div>
+    </div>
+</body>
+</html>

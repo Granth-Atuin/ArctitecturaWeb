@@ -1,0 +1,42 @@
+# =========================
+# Dependencias de Frontend (Astro / Node)
+# =========================
+node_modules/
+dist/
+.astro/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.env
+.env.*
+!.env.example
+
+# =========================
+# Dependencias de Backend (Django / Python)
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Archivos de base de datos locales
+db.sqlite3
+db.sqlite3-journal
+
+# =========================
+# Sistema de Archivos e IDEs
+# =========================
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo

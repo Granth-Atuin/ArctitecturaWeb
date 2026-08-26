@@ -1,0 +1,132 @@
+---
+import IslaInscripcion from '../../components/IslaInscripcion.jsx';
+
+// Configuración de la URL base de la API
+const API_URL = "http://127.0.0.1:8000";
+
+// La función getStaticPaths es requerida por Astro para generar rutas dinámicas en SSG
+export async function getStaticPaths() {
+    const API_URL = "http://127.0.0.1:8000";
+    
+    // Consultamos la API de Django en tiempo de build
+    const respuesta = await fetch(`${API_URL}/activities`);
+    const actividades = await respuesta.json();
+
+    // Generamos las páginas estáticas correspondientes a los IDs existentes
+    return actividades.map((actividad: any) => {
+        return {
+            params: { id: actividad.id.toString() }
+        };
+    });
+}
+
+// Obtenemos el ID de los parámetros generados
+const { id } = Astro.params;
+
+// Fetch de los detalles específicos de esta actividad
+const respuestaDetalle = await fetch(`${API_URL}/activities/${id}`);
+const actividad = await respuestaDetalle.json();
+---
+
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{actividad.titulo} - Detalle</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        .contenedor {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        h1 {
+            color: #2c3e50;
+            margin-top: 0;
+            font-size: 2.2rem;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 1rem;
+        }
+        .info-basica {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+        .etiqueta {
+            font-weight: 600;
+            color: #7f8c8d;
+        }
+        .descripcion-bloque {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: #f8fafc;
+            border-left: 5px solid #3498db;
+            border-radius: 0 8px 8px 0;
+        }
+        .descripcion-bloque h3 {
+            margin-top: 0;
+            color: #2980b9;
+        }
+        .enlace-volver {
+            display: inline-block;
+            margin-bottom: 2rem;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        .enlace-volver:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+        .mensaje-temporal {
+            margin-top: 3rem;
+            padding: 1rem;
+            background-color: #fff3cd;
+            color: #856404;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #ffeeba;
+        }
+    </style>
+</head>
+<body>
+    <div class="contenedor">
+        <a href="/activities" class="enlace-volver">&larr; Volver al listado general</a>
+        
+        <h1>{actividad.titulo}</h1>
+        
+        <div class="info-basica">
+            <p>
+                <span class="etiqueta">Fecha programada:</span> 
+                {new Date(actividad.fecha).toLocaleString('es-LA')}
+            </p>
+            <p>
+                <span class="etiqueta">Capacidad Total:</span> 
+                {actividad.capacidad} personas
+            </p>
+            <p>
+                <span class="etiqueta">Lugares Disponibles:</span> 
+                {actividad.disponibilidad}
+            </p>
+        </div>
+
+        <div class="descripcion-bloque">
+            <h3>Acerca de esta actividad</h3>
+            <p>{actividad.descripcion}</p>
+        </div>
+        
+        <!-- Isla interactiva de React montada en el cliente de forma hidratada -->
+        <IslaInscripcion idActividad={actividad.id} client:load />
+    </div>
+</body>
+</html>
