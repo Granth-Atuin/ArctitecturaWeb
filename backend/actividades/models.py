@@ -29,8 +29,8 @@ class Actividad(models.Model):
             "titulo": self.titulo,
             "fecha": self.fecha.isoformat(),
             "availability": {
-                "capacidad": self.capacidad,
-                "disponibilidad": self.disponibilidad
+                "capacity": self.capacidad,
+                "available_slots": self.disponibilidad
             }
         }
         if con_descripcion:
