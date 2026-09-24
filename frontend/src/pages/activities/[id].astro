@@ -2,11 +2,11 @@
 import IslaInscripcion from '../../components/IslaInscripcion.jsx';
 
 // Configuración de la URL base de la API
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "http://127.0.0.1:8000/api/v1";
 
 // La función getStaticPaths es requerida por Astro para generar rutas dinámicas en SSG
 export async function getStaticPaths() {
-    const API_URL = "http://127.0.0.1:8000";
+    const API_URL = "http://127.0.0.1:8000/api/v1";
     
     // Consultamos la API de Django en tiempo de build
     const respuesta = await fetch(`${API_URL}/activities`);

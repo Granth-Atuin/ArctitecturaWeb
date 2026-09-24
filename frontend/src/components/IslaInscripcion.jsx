@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "http://127.0.0.1:8000/api/v1";
 
 export default function IslaInscripcion({ idActividad }) {
     const [cargando, setCargando] = useState(true);

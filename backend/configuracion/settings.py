@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'configuracion.middleware.CorrelationIdMiddleware',
 ]
 
 ROOT_URLCONF = 'configuracion.urls'
@@ -132,3 +133,19 @@ MAILERS = {
 # CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'actividades': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+}
