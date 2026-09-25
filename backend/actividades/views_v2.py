@@ -34,7 +34,7 @@ def obtener_usuario_actual(request):
 def obtener_actividades(request):
     """ GET /activities """
     actividades = Actividad.objects.all()
-    datos = [actividad.to_dict(con_descripcion=False) for actividad in actividades]
+    datos = [actividad.to_dict_v2(con_descripcion=False) for actividad in actividades]
     return JsonResponse(datos, safe=False)
 
 @require_http_methods(["GET"])
@@ -42,7 +42,7 @@ def obtener_actividad_por_id(request, id):
     """ GET /activities/<id> """
     try:
         actividad = Actividad.objects.get(id=id)
-        return JsonResponse(actividad.to_dict(con_descripcion=True))
+        return JsonResponse(actividad.to_dict_v2(con_descripcion=True))
     except Actividad.DoesNotExist:
         return JsonResponse({"error": "Actividad no encontrada"}, status=404)
 

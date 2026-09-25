@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views_v2 as views
 
 urlpatterns = [
     path('activities', views.obtener_actividades, name='obtener_actividades'),
