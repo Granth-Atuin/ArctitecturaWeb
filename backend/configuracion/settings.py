@@ -10,8 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,7 +21,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-=j4em+k+jr)x3vr5-c7$=^1lf+%+c^tl(4#dw_-l7+kgp=2ms7')
+SECRET_KEY = os.environ.get('SECRET_KEY', os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-=j4em+k+jr)x3vr5-c7$=^1lf+%+c^tl(4#dw_-l7+kgp=2ms7'))
+
+# JWT Configuration
+JWT_SIGNING_KEY = os.environ.get('JWT_SIGNING_KEY', 'hito2-demo-signing-key-cambiar-en-produccion-32b')
+JWT_ISSUER = 'untdf-hito2'
+ACCESS_SECONDS = int(os.environ.get('ACCESS_SECONDS', '300'))   # 5 minutos
+REFRESH_SECONDS = int(os.environ.get('REFRESH_SECONDS', '604800'))  # 7 días
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
@@ -131,6 +137,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
@@ -144,6 +153,12 @@ MAILERS = {
 # CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'authorization',
+    'content-type',
+    'x-csrftoken',
+]
 
 LOGGING = {
     'version': 1,

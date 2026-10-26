@@ -1,5 +1,6 @@
 django>=5.0,<7.0
 djangorestframework
 django-cors-headers
+PyJWT
 psycopg2-binary
 gunicorn
