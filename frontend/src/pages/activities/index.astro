@@ -3,8 +3,15 @@
 const API_URL = "http://127.0.0.1:8000";
 
 // Fetch a la API en tiempo de build para la Generación Estática (SSG)
-const respuesta = await fetch(`${API_URL}/activities`);
-const actividades = await respuesta.json();
+let actividades: any[] = [];
+try {
+    const respuesta = await fetch(`${API_URL}/api/v1/activities`);
+    if (respuesta.ok) {
+        actividades = await respuesta.json();
+    }
+} catch (error) {
+    console.warn("Aviso: No se pudo conectar a la API en tiempo de build:", error);
+}
 ---
 
 <html lang="es">

@@ -7,25 +7,40 @@ const API_URL = "http://127.0.0.1:8000";
 // La función getStaticPaths es requerida por Astro para generar rutas dinámicas en SSG
 export async function getStaticPaths() {
     const API_URL = "http://127.0.0.1:8000";
-    
-    // Consultamos la API de Django en tiempo de build
-    const respuesta = await fetch(`${API_URL}/activities`);
-    const actividades = await respuesta.json();
-
-    // Generamos las páginas estáticas correspondientes a los IDs existentes
-    return actividades.map((actividad: any) => {
-        return {
-            params: { id: actividad.id.toString() }
-        };
-    });
+    try {
+        const respuesta = await fetch(`${API_URL}/api/v1/activities`);
+        if (respuesta.ok) {
+            const actividades = await respuesta.json();
+            return actividades.map((actividad: any) => ({
+                params: { id: actividad.id.toString() }
+            }));
+        }
+    } catch (e) {
+        console.warn("Aviso: Backend offline durante getStaticPaths, usando fallback de IDs.");
+    }
+    return [{ params: { id: "1" } }, { params: { id: "2" } }, { params: { id: "3" } }];
 }
 
 // Obtenemos el ID de los parámetros generados
 const { id } = Astro.params;
 
-// Fetch de los detalles específicos de esta actividad
-const respuestaDetalle = await fetch(`${API_URL}/activities/${id}`);
-const actividad = await respuestaDetalle.json();
+let actividad = {
+    id: id,
+    titulo: `Actividad #${id}`,
+    fecha: new Date().toISOString(),
+    capacidad: 0,
+    disponibilidad: 0,
+    descripcion: "Detalle de la actividad."
+};
+
+try {
+    const respuestaDetalle = await fetch(`${API_URL}/api/v1/activities/${id}`);
+    if (respuestaDetalle.ok) {
+        actividad = await respuestaDetalle.json();
+    }
+} catch (e) {
+    console.warn(`Aviso: Backend offline para detalle de actividad ${id}.`);
+}
 ---
 
 <html lang="es">
