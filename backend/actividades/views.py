@@ -13,9 +13,13 @@ from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+import logging
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
 from .models import Actividad, Inscripcion, Participante, RefreshToken
+
+logger = logging.getLogger('actividades')
+PARTICIPANTE_POR_DEFECTO = "participante_demo"
 
 User = get_user_model()
 
@@ -345,3 +349,17 @@ def cancelar_inscripcion(request, id_actividad):
         return error_response("not_enrolled", "No estás inscripto a esta actividad.", 404)
 
     return private_json({"mensaje": "Inscripción cancelada."})
+
+
+@csrf_exempt
+@require_http_methods(["PUT", "DELETE"])
+def gestionar_inscripcion(request, id_actividad):
+    """Compatibilidad con entrega previa: delega a inscripcion o cancelar_inscripcion."""
+    if request.method == "PUT":
+        return inscripcion(request, id_actividad)
+    elif request.method == "DELETE":
+        return cancelar_inscripcion(request, id_actividad)
+
+
+obtener_mis_inscripciones = mis_inscripciones
+

@@ -21,7 +21,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-=j4em+k+jr)x3vr5-c7$=^1lf+%+c^tl(4#dw_-l7+kgp=2ms7')
+SECRET_KEY = os.environ.get('SECRET_KEY', os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-=j4em+k+jr)x3vr5-c7$=^1lf+%+c^tl(4#dw_-l7+kgp=2ms7'))
 
 # JWT Configuration
 JWT_SIGNING_KEY = os.environ.get('JWT_SIGNING_KEY', 'hito2-demo-signing-key-cambiar-en-produccion-32b')
@@ -30,9 +30,9 @@ ACCESS_SECONDS = int(os.environ.get('ACCESS_SECONDS', '300'))   # 5 minutos
 REFRESH_SECONDS = int(os.environ.get('REFRESH_SECONDS', '604800'))  # 7 días
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -57,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'configuracion.middleware.CorrelationIdMiddleware',
 ]
 
 ROOT_URLCONF = 'configuracion.urls'
@@ -88,6 +89,16 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+if os.environ.get('DB_NAME'):
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DB_NAME'),
+        'USER': os.environ.get('DB_USER'),
+        'PASSWORD': os.environ.get('DB_PASSWORD'),
+        'HOST': os.environ.get('DB_HOST', 'db'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
+    }
 
 
 # Password validation
@@ -148,3 +159,19 @@ CORS_ALLOW_HEADERS = [
     'content-type',
     'x-csrftoken',
 ]
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'actividades': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+    },
+}

@@ -1,6 +1,6 @@
-# Sistema de Inscripciones a Actividades — Entrega 4 (Autenticación JWT)
+# Arquitecturas Web — Sistema de Inscripciones (Entrega 4: Autenticación JWT)
 
-Este repositorio contiene la solución para el sistema de inscripción a actividades con **autenticación JWT** (Access Token de corta duración en memoria RAM + Refresh Token opaco rotativo en cookie `HttpOnly`), siguiendo la arquitectura web desacoplada con **Astro** (Frontend SSG + Isla React) y **Django** (Backend API REST).
+Este repositorio contiene la solución completa para el sistema de inscripción a actividades con **autenticación JWT** (Access Token de corta duración en memoria RAM + Refresh Token opaco rotativo en cookie `HttpOnly`), siguiendo la arquitectura web desacoplada con **Astro** (Frontend SSG + Isla React) y **Django** (Backend API REST).
 
 ---
 
@@ -61,15 +61,18 @@ Este repositorio contiene la solución para el sistema de inscripción a activid
 
 ---
 
-## 🚀 Guía de Ejecución Rápida
+## 🚀 Modos de Ejecución
 
-### 1. Backend (Django)
+### Modo 1: Desarrollo Local
 
+Ideal para programar con recarga automática:
+
+#### Backend (Django)
 ```bash
 cd backend
 
 # Activar entorno virtual
-.\venv\Scripts\activate          # En Windows PowerShell / CMD
+.\venv\Scripts\activate          # En Windows PowerShell
 # source venv/bin/activate       # En Linux / Mac
 
 # Instalar dependencias
@@ -81,30 +84,36 @@ python manage.py migrate
 # Cargar datos iniciales y usuarios de prueba
 python seed.py
 
-# (Opcional) Correr la suite de pruebas automatizadas
-python manage.py test
-
-# Iniciar el servidor
+# Iniciar servidor
 python manage.py runserver
 ```
+El backend quedará en `http://127.0.0.1:8000`.
 
-El backend quedará escuchando en `http://127.0.0.1:8000`.
-
-### 2. Frontend (Astro + React)
-
+#### Frontend (Astro + React)
 En otra terminal:
-
 ```bash
 cd frontend
-
-# Instalar dependencias
 npm install
-
-# Iniciar servidor de desarrollo
 npm run dev
 ```
+El frontend estará en `http://localhost:4321`.
 
-El frontend estará accesible en `http://localhost:4321`.
+---
+
+### Modo 2: Objetivo (Docker Compose / Producción)
+
+Levanta la topología completa (Nginx, Gunicorn, PostgreSQL y Frontend estático):
+
+```bash
+docker-compose up --build
+```
+
+Abre `http://localhost/`. Nginx se encarga de servir el frontend y redirigir `/api/*` al backend.
+
+Para detener:
+```bash
+docker-compose down
+```
 
 ---
 

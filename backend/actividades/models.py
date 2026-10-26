@@ -34,6 +34,20 @@ class Actividad(models.Model):
             data["descripcion"] = self.descripcion
         return data
 
+    def to_dict_v2(self, con_descripcion=False):
+        data = {
+            "id": str(self.id),
+            "titulo": self.titulo,
+            "fecha": self.fecha.isoformat(),
+            "availability": {
+                "capacity": self.capacidad,
+                "available_slots": self.disponibilidad
+            }
+        }
+        if con_descripcion:
+            data["descripcion"] = self.descripcion
+        return data
+
     def __str__(self):
         return self.titulo
 
@@ -76,6 +90,7 @@ class Inscripcion(models.Model):
         related_name='inscripciones',
         verbose_name="Participante",
     )
+    fecha_inscripcion = models.DateTimeField(auto_now_add=True, verbose_name="Fecha de Inscripción")
 
     class Meta:
         unique_together = ('actividad', 'participante')
@@ -86,6 +101,9 @@ class Inscripcion(models.Model):
         return {
             "id_actividad": self.actividad.id,
             "titulo": self.actividad.titulo,
+            "activity_id": str(self.actividad.id),
+            "participant_id": self.participante.user.email,
+            "enrolled_at": self.fecha_inscripcion.isoformat() if self.fecha_inscripcion else None
         }
 
     def __str__(self):

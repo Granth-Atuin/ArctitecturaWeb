@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = import.meta.env.PUBLIC_CLIENT_API_URL || "http://127.0.0.1:8000/api/v1";
 
 // ─── Estado global del access token (en memoria, no en localStorage) ──────────
 // Siguiendo el patrón del ejemplo 05: el access token NUNCA se persiste en disco.

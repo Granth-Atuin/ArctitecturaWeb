@@ -2,13 +2,13 @@
 import IslaInscripcion from '../../components/IslaInscripcion.jsx';
 
 // Configuración de la URL base de la API
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = import.meta.env.PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
 
 // La función getStaticPaths es requerida por Astro para generar rutas dinámicas en SSG
 export async function getStaticPaths() {
-    const API_URL = "http://127.0.0.1:8000";
+    const API_URL = import.meta.env.PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
     try {
-        const respuesta = await fetch(`${API_URL}/api/v1/activities`);
+        const respuesta = await fetch(`${API_URL}/activities`);
         if (respuesta.ok) {
             const actividades = await respuesta.json();
             return actividades.map((actividad: any) => ({
@@ -34,7 +34,7 @@ let actividad = {
 };
 
 try {
-    const respuestaDetalle = await fetch(`${API_URL}/api/v1/activities/${id}`);
+    const respuestaDetalle = await fetch(`${API_URL}/activities/${id}`);
     if (respuestaDetalle.ok) {
         actividad = await respuestaDetalle.json();
     }

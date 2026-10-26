@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('actividades', '0001_initial'),
+        ('actividades', '0002_inscripcion_fecha_inscripcion'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -58,7 +58,6 @@ class Migration(migrations.Migration):
                 'verbose_name_plural': 'Refresh Tokens',
             },
         ),
-        # Limpiar datos antiguos de inscripcion incompatibles con la nueva FK
         migrations.RunSQL(
             sql="DELETE FROM actividades_inscripcion;",
             reverse_sql=migrations.RunSQL.noop,
