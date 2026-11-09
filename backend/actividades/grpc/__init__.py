@@ -1,1 +1,2 @@
 # Adaptador gRPC para actividades
+

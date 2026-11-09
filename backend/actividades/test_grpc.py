@@ -115,3 +115,4 @@ class ServicioInscripcionesTests(TestCase):
         respuesta, contexto = self.inscribir(self.actividad.id, token="token_invalido_xyz")
         self.assertIsNone(respuesta)
         self.assertEqual(contexto.codigo, grpc.StatusCode.UNAUTHENTICATED)
+

@@ -79,3 +79,4 @@ def _participante_autenticado(context):
         return usuario.participante
     except Participante.DoesNotExist:
         context.abort(grpc.StatusCode.UNAUTHENTICATED, "El usuario no posee perfil de participante.")
+

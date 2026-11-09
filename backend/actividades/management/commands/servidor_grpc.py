@@ -28,3 +28,4 @@ class Command(BaseCommand):
         except KeyboardInterrupt:
             self.stdout.write("Deteniendo servidor gRPC...")
             servidor.stop(0)
+
