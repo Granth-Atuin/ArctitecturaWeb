@@ -1,139 +1,152 @@
-# Arquitecturas Web — Sistema de Inscripciones (Entrega 4: Autenticación JWT)
+# Arquitecturas Web — Sistema de Inscripciones (Entrega: Adaptador de Entrada gRPC)
 
-Este repositorio contiene la solución completa para el sistema de inscripción a actividades con **autenticación JWT** (Access Token de corta duración en memoria RAM + Refresh Token opaco rotativo en cookie `HttpOnly`), siguiendo la arquitectura web desacoplada con **Astro** (Frontend SSG + Isla React) y **Django** (Backend API REST).
-
----
-
-## 🏛️ Arquitectura y Seguridad JWT
-
-```
-                    ┌─────────────────────────────────────────────────────────┐
-                    │                  NAVEGADOR CLIENTE                      │
-                    │                                                         │
-                    │  ┌───────────────────────────────────────────────────┐  │
-                    │  │ Astro (SSG)                                       │  │
-                    │  │ /activities                                       │  │
-                    │  │ /activities/:id                                   │  │
-                    │  └─────────────────────────┬─────────────────────────┘  │
-                    │                            │ monta e hidrata            │
-                    │  ┌─────────────────────────▼─────────────────────────┐  │
-                    │  │ Isla React (IslaInscripcion.jsx)                  │  │
-                    │  │                                                   │  │
-                    │  │  • Access Token  : Solo en memoria (RAM)          │  │
-                    │  │  • Refresh Token : Cookie HttpOnly (SameSite=Lax) │  │
-                    │  └─────────────────────────┬─────────────────────────┘  │
-                    └────────────────────────────┼────────────────────────────┘
-                                                 │ HTTPS / HTTP
-                                                 │ Header: Authorization: Bearer <token>
-                                                 │ Cookie: refresh_token=<secreto>
-                                                 ▼
-                    ┌─────────────────────────────────────────────────────────┐
-                    │                   BACKEND (Django REST)                 │
-                    │                                                         │
-                    │   /api/v1/auth/*     -> Registro, Login, Refresh, Logout│
-                    │   /api/v1/me/*       -> Perfil e Inscripciones usuario  │
-                    │   /api/v1/activities -> Catálogo público de actividades │
-                    │                                                         │
-                    │  ┌───────────────────────────────────────────────────┐  │
-                    │  │                    Base de Datos                  │  │
-                    │  │  • Actividad                                      │  │
-                    │  │  • Participante (1-a-1 con auth.User)             │  │
-                    │  │  • Inscripcion (relación N:M)                     │  │
-                    │  │  • RefreshToken (solo hash SHA-256 almacenado)    │  │
-                    │  └───────────────────────────────────────────────────┘  │
-                    └─────────────────────────────────────────────────────────┘
-```
-
-### Respuestas a Decisiones de Diseño Clave
-
-1. **¿Dónde se guarda cada dato y por qué?**
-   - **Access Token:** Se almacena **exclusivamente en memoria RAM** (variable local dentro del módulo JS de React). Nunca en `localStorage` ni `sessionStorage` para mitigar vulnerabilidades de robo de tokens vía ataques **XSS (Cross-Site Scripting)**.
-   - **Refresh Token:** Se almacena en una cookie con banderas **`HttpOnly`** (inaccesible desde cualquier script JavaScript) y **`SameSite=Lax`**.
-   - **Hash del Refresh Token:** En la base de datos se almacena **únicamente el hash SHA-256** del token, nunca el secreto en texto plano. Si la base de datos fuera comprometida, los atacantes no podrían usar los tokens para autenticarse.
-   - **Contraseñas:** Hasheadas mediante el algoritmo seguro de Django (PBKDF2 con SHA-256).
-
-2. **Rotación de Refresh Tokens:**
-   - Cada vez que se invoca `POST /api/v1/auth/refresh`, el token actual se valida, se **destruye** de la base de datos y se emite un nuevo par de access token y refresh token con cookie renovada.
-
-3. **¿Qué sucede con un Access Token tras el Logout?**
-   - El logout invalida de inmediato el refresh token en la base de datos y elimina la cookie en el cliente.
-   - Debido a que los JWT son *stateless*, un access token ya firmado seguirá siendo válido hasta que expire naturalmente (configurado en **5 minutos** / `ACCESS_SECONDS = 300`). Mantener una ventana corta de expiración es el estándar de la industria que evita sobrecargar la API con listas negras en memoria compartida (Redis).
+Este repositorio contiene la solución completa para el sistema de inscripción a actividades con **autenticación JWT** y **múltiples adaptadores de entrada** siguiendo principios de Arquitectura Hexagonal / Clean Architecture:
+1. **Frontend SSG + Isla React** (Astro + React) consumiendo la API REST.
+2. **API REST HTTP** (Django).
+3. **Adaptador de Entrada gRPC** (puerto `50051`) que procesa inscripciones bajo el mismo dominio de negocio y con la misma identidad JWT en la metadata.
 
 ---
 
-## 🚀 Modos de Ejecución
+## 🏛️ Topología y Adaptadores de Entrada
 
-### Modo 1: Desarrollo Local
+```
+                                  ENTRADAS AL SISTEMA
+                                  
+     ┌────────────────────────┐                   ┌────────────────────────┐
+     │   Navegador Cliente    │                   │ Cliente gRPC / grpcurl │
+     │  (Astro SSG + React)   │                   │  (Scripts / Servicios) │
+     └───────────┬────────────┘                   └───────────┬────────────┘
+                 │ HTTP (REST)                                │ gRPC (Protobuf)
+                 │ Bearer Token / Cookie HttpOnly             │ Metadata: authorization
+                 ▼                                            ▼
+     ┌────────────────────────┐                   ┌────────────────────────┐
+     │    Django HTTP API     │                   │   Servicio gRPC        │
+     │      (Puerto 8000)     │                   │   (Puerto 50051)       │
+     └───────────┬────────────┘                   └───────────┬────────────┘
+                 │                                            │
+                 └──────────────────────┬─────────────────────┘
+                                        │
+                                        ▼
+                         ┌─────────────────────────────┐
+                         │      REGLAS DE NEGOCIO      │
+                         │      (Dominio / Modelos)    │
+                         │                             │
+                         │  • Actividad (cupos)        │
+                         │  • Participante / User      │
+                         │  • Inscripción (idempotente)│
+                         │  • Validación JWT           │
+                         └──────────────┬──────────────┘
+                                        │
+                                        ▼
+                         ┌─────────────────────────────┐
+                         │   Base de Datos (Postgres)  │
+                         └─────────────────────────────┘
+```
 
-Ideal para programar con recarga automática:
+---
 
-#### Backend (Django)
+## ⚡ Adaptador de Entrada gRPC
+
+El adaptador gRPC expone la lógica de inscripción en un proceso independiente (puerto `50051`), demostrando cómo distintos protocolos activan el mismo núcleo de negocio:
+
+### 1. Contrato Protobuf (`inscripciones.proto`)
+
+Ubicado en `backend/actividades/grpc/inscripciones.proto`:
+
+```protobuf
+syntax = "proto3";
+
+package inscripciones.v1;
+
+service Inscripciones {
+  // Idempotente, idéntico a PUT /api/v1/me/enrollments/{actividad_id}.
+  // Identidad: metadata "authorization: Bearer <access JWT>".
+  rpc Inscribir(InscribirRequest) returns (InscribirResponse);
+}
+
+message InscribirRequest {
+  string actividad_id = 1;
+}
+
+message InscribirResponse {
+  string actividad_id = 1;
+  string participante_id = 2;
+  string inscripta_en = 3;  // ISO 8601
+  bool creada = 4;          // false si ya estaba inscripta
+}
+```
+
+### 2. Autenticación y Mapeo de Errores
+
+El servicio gRPC (`ServicioInscripciones` en `backend/actividades/grpc/servicio.py`) implementa la misma política de seguridad que la API HTTP:
+- **Identidad**: Extrae el token JWT Bearer desde la metadata gRPC (`authorization: Bearer <token>`). Si está ausente o es inválido, devuelve el código `UNAUTHENTICATED`.
+- **Idempotencia**: Si el usuario ya está inscripto, la operación no falla y devuelve `creada = false` con los datos de su inscripción.
+- **Validación**:
+  - `INVALID_ARGUMENT`: Si `actividad_id` no es un identificador entero válido o es menor o igual a cero.
+  - `NOT_FOUND`: Si la actividad solicitada no existe en la base de datos.
+  - `FAILED_PRECONDITION`: Si la capacidad de la actividad se encuentra agotada.
+
+### 3. Ejecución del Servidor gRPC
+
+#### Localmente (modo desarrollo):
 ```bash
 cd backend
+.\venv\Scripts\activate           # Windows
+# source venv/bin/activate        # Linux / Mac
 
-# Activar entorno virtual
-.\venv\Scripts\activate          # En Windows PowerShell
-# source venv/bin/activate       # En Linux / Mac
-
-# Instalar dependencias
-pip install -r requirements.txt
-
-# Aplicar migraciones
-python manage.py migrate
-
-# Cargar datos iniciales y usuarios de prueba
-python seed.py
-
-# Iniciar servidor
-python manage.py runserver
+python manage.py servidor_grpc --puerto 50051
 ```
-El backend quedará en `http://127.0.0.1:8000`.
 
-#### Frontend (Astro + React)
-En otra terminal:
+#### Con Docker Compose:
+El servicio `grpc` viene configurado en `docker-compose.yml`:
 ```bash
-cd frontend
-npm install
-npm run dev
+docker compose up --build
 ```
-El frontend estará en `http://localhost:4321`.
+El servidor gRPC queda disponible en `localhost:50051`.
+
+### 4. Prueba con `grpcurl`
+
+1. Obtener un Access Token desde la API HTTP:
+```bash
+TOKEN=$(curl -s -X POST http://127.0.0.1:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"ana@example.com","password":"DemoPassword123!"}' \
+  | python -c "import sys, json; print(json.load(sys.stdin)['access_token'])")
+```
+
+2. Invocar el método `Inscribir` por gRPC:
+```bash
+grpcurl -plaintext \
+  -proto backend/actividades/grpc/inscripciones.proto \
+  -H "authorization: Bearer $TOKEN" \
+  -d '{"actividad_id": "1"}' \
+  localhost:50051 inscripciones.v1.Inscripciones/Inscribir
+```
 
 ---
 
-### Modo 2: Objetivo (Docker Compose / Producción)
+## 🔒 Seguridad y JWT
 
-Levanta la topología completa (Nginx, Gunicorn, PostgreSQL y Frontend estático):
-
-```bash
-docker-compose up --build
-```
-
-Abre `http://localhost/`. Nginx se encarga de servir el frontend y redirigir `/api/*` al backend.
-
-Para detener:
-```bash
-docker-compose down
-```
+1. **Access Token:** Se almacena **exclusivamente en memoria RAM** en el frontend (React) o en variables del cliente gRPC. Tiene una vida corta (**5 minutos**) y se envía en el header `Authorization: Bearer <token>` (en HTTP) o en la metadata gRPC.
+2. **Refresh Token:** Se almacena en una cookie con banderas **`HttpOnly`** y **`SameSite=Lax`**. En base de datos se guarda solo su **hash SHA-256**.
+3. **Rotación:** Cada petición a `/api/v1/auth/refresh` destruye el token anterior y emite uno nuevo.
 
 ---
 
 ## 👥 Usuarios de Prueba Precargados
 
-Al ejecutar `python seed.py`, se crean las siguientes cuentas listas para probar el flujo de inscripción:
+Al ejecutar `python seed.py` (o en la inicialización de la base):
 
 | Nombre | Email | Contraseña |
 | :--- | :--- | :--- |
 | **Ana García** | `ana@example.com` | `Demo1234!` |
 | **Carlos López** | `carlos@example.com` | `Demo1234!` |
 
-*(También es posible crear nuevas cuentas desde el botón "¿No tenés cuenta? Registrate" en la interfaz).*
-
 ---
 
-## 📡 Catálogo de Endpoints de la API
+## 📡 Catálogo de Endpoints de la API REST
 
 ### Autenticación (`/api/v1/auth/`)
-
 | Método | Endpoint | Descripción | Acceso |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/v1/auth/register` | Crea usuario y participante | Público |
@@ -142,7 +155,6 @@ Al ejecutar `python seed.py`, se crean las siguientes cuentas listas para probar
 | `POST` | `/api/v1/auth/logout` | Invalida el Refresh Token en BD y elimina cookie | Cookie `refresh_token` |
 
 ### Perfil y Gestión de Inscripciones (`/api/v1/me/`)
-
 | Método | Endpoint | Descripción | Autenticación |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/me` | Obtiene los datos del participante autenticado | `Bearer <token>` |
@@ -151,7 +163,6 @@ Al ejecutar `python seed.py`, se crean las siguientes cuentas listas para probar
 | `DELETE` | `/api/v1/me/enrollments/<id>/cancel` | Cancela la inscripción en la actividad | `Bearer <token>` |
 
 ### Actividades Públicas (`/api/v1/activities`)
-
 | Método | Endpoint | Descripción | Acceso |
 | :--- | :--- | :--- | :--- |
 | `GET` | `/api/v1/activities` | Listado general de actividades | Público |
@@ -161,17 +172,18 @@ Al ejecutar `python seed.py`, se crean las siguientes cuentas listas para probar
 
 ## 🧪 Pruebas Automatizadas
 
-El backend incluye tests unitarios y de integración para validar todo el flujo de autenticación, persistencia y seguridad:
+El backend incluye tests unitarios y de integración tanto para el flujo HTTP/JWT como para el servicio gRPC:
 
 ```bash
 cd backend
 python manage.py test
 ```
 
-Resultados cubiertos:
-- Registro de nuevo usuario y control de email duplicado (409).
-- Login exitoso (Access Token + Cookie HttpOnly) y rechazo ante credenciales erróneas (401).
-- Rotación efectiva del refresh token.
-- Invalidación de sesión con logout.
-- Acceso denegado a endpoints privados sin Bearer token.
-- Flujo completo de inscripción, prevención de sobre-inscripción y cancelación.
+### Cobertura verificada (11 tests):
+- ✅ Registro de usuario y control de emails duplicados (409).
+- ✅ Login con emisión de JWT y cookie HttpOnly, y rechazo ante credenciales erróneas (401).
+- ✅ Rotación de refresh tokens e invalidación con logout.
+- ✅ Inscripción HTTP, prevención de sobre-inscripción y cancelación.
+- ✅ **gRPC: Inscripción exitosa e idempotencia (creada = True / False sin duplicar registros)**.
+- ✅ **gRPC: Mapeo de errores de dominio a códigos de estado gRPC (`FAILED_PRECONDITION`, `NOT_FOUND`, `INVALID_ARGUMENT`, `UNAUTHENTICATED`)**.
+- ✅ **gRPC: Rechazo de token inválido o expirado en la metadata**.

@@ -7,6 +7,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8000
+EXPOSE 8000 50051
 
 CMD ["gunicorn", "configuracion.wsgi:application", "--bind", "0.0.0.0:8000"]
