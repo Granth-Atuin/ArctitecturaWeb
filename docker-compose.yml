@@ -25,6 +25,23 @@ services:
       - db
     restart: always
 
+  # Adaptador de entrada gRPC: mismo código y modelo, otro proceso y protocolo
+  grpc:
+    build: ./backend
+    command: python manage.py servidor_grpc --puerto 50051
+    environment:
+      - DB_NAME=actividades_db
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      - db
+      - backend
+    ports:
+      - "50051:50051"
+    restart: always
+
   frontend-builder:
     image: node:22-alpine
     working_dir: /app

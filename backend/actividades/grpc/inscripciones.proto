@@ -1,0 +1,24 @@
+// Contrato gRPC de inscripciones: adaptador de entrada para inscripción de actividades.
+// Regenerar el código (desde backend/):
+//   python -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. actividades/grpc/inscripciones.proto
+syntax = "proto3";
+
+package inscripciones.v1;
+
+service Inscripciones {
+  // Idempotente, como PUT /api/v1/me/enrollments/{actividad_id}.
+  // Identidad: metadata "authorization: Bearer <access JWT>".
+  rpc Inscribir(InscribirRequest) returns (InscribirResponse);
+}
+
+message InscribirRequest {
+  string actividad_id = 1;
+}
+
+message InscribirResponse {
+  string actividad_id = 1;
+  string participante_id = 2;
+  string inscripta_en = 3;  // ISO 8601
+  bool creada = 4;          // false si ya estaba inscripta
+}
+
